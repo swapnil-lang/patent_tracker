@@ -41,7 +41,9 @@ function showSignedInUser(user) {
   document.querySelector('#userName').textContent = user.name;
   document.querySelector('#userRole').textContent = user.role;
   document.querySelector('#userInitials').textContent = initials(user.name);
-  document.querySelector('.hero h1').textContent = `Good morning, ${user.name.split(' ')[0]}.`;
+  const hour = new Date().getHours();
+  const part = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  document.querySelector('.hero h1').textContent = `Good ${part}, ${user.name.split(' ')[0]}.`;
 }
 function setAuthState(user) {
   document.body.classList.remove('auth-pending', 'logged-in', 'logged-out');
@@ -101,18 +103,59 @@ function filteredPatents() {
     return matchesFilter && matchesYear && matchesType && matchesTerm;
   });
 }
+function renderTypeCounts() {
+  document.querySelectorAll('.type-card').forEach((card) => {
+    const type = card.dataset.type;
+    const count = type === 'All' ? patents.length : patents.filter((patent) => patent.type === type).length;
+    card.querySelector('b').textContent = count;
+    const noun = card.dataset.noun || (card.dataset.noun = card.querySelector('small').textContent.replace(/^\d+\s*/, ''));
+    card.querySelector('small').textContent = `${count} ${noun}`;
+  });
+  document.querySelector('.nav-link[href="#portfolio"] b').textContent = patents.length;
+}
+function renderGreeting() {
+  const now = new Date();
+  document.querySelector('#heroDate').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
+  const hour = now.getHours();
+  const part = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  const heading = document.querySelector('.hero h1');
+  heading.textContent = heading.textContent.replace(/Good (morning|afternoon|evening)/, `Good ${part}`);
+}
+function renderStats() {
+  document.querySelector('#statTotal').innerHTML = `${patents.length} <small>IP records</small>`;
+  document.querySelector('#statUrgent').textContent = patents.filter((patent) => patent.urgent).length;
+  document.querySelector('#statGranted').textContent = patents.filter((patent) => patent.status === 'Granted' || patent.status === 'Registered').length;
+}
+function renderFilterSummary(shown) {
+  const summary = document.querySelector('#filterSummary');
+  const active = [];
+  if (typeFilter.value !== 'All') active.push({ label: typeFilter.options[typeFilter.selectedIndex].textContent, clear: 'type' });
+  if (activeFilter !== 'All') active.push({ label: activeFilter, clear: 'status' });
+  if (yearFilter.value !== 'All') active.push({ label: `Filed in ${yearFilter.value}`, clear: 'year' });
+  const term = search.value.trim();
+  if (term) active.push({ label: `“${term}”`, clear: 'search' });
+  summary.classList.toggle('is-filtered', active.length > 0);
+  summary.innerHTML = `
+    <span class="summary-count"><b>${shown}</b> of ${patents.length} records</span>
+    ${active.map((item) => `<button class="active-filter" type="button" data-clear="${item.clear}">${item.label}<span class="material-symbols-outlined">close</span></button>`).join('')}
+    ${active.length ? '<button class="clear-all" type="button" data-clear="all">Clear all</button>' : ''}`;
+}
 function renderPatents() {
   const list = filteredPatents();
   document.querySelector('#resultCount').textContent = list.length;
+  renderFilterSummary(list.length);
   table.innerHTML = list.length ? list.map((patent) => `
     <tr class="record-row" data-patent="${patent.id}" tabindex="0" role="button" aria-label="Open ${patent.title}">
       <td class="application"><strong>${patent.title}</strong><small>${patent.type.toUpperCase()} ${patent.id}</small></td>
-      <td><span class="type-tag ${slug(patent.type)}">${patent.type}</span></td>
-      <td><span class="status ${slug(patent.status)}">${patent.status}</span></td>
-      <td class="date">${patent.filed}</td><td class="date">${patent.updated}</td>
-      <td class="next-action ${patent.urgent ? 'urgent' : ''}">${patent.next}</td>
-      <td><button class="row-btn" data-patent="${patent.id}" aria-label="View ${patent.title}">→</button></td>
-    </tr>`).join('') : '<tr><td colspan="7" class="empty">No records match those filters.</td></tr>';
+      <td data-label="IP type"><span class="type-tag ${slug(patent.type)}">${patent.type}</span></td>
+      <td data-label="Status"><span class="status ${slug(patent.status)}">${patent.status}</span></td>
+      <td class="date" data-label="Filed">${patent.filed}</td><td class="date" data-label="Last update">${patent.updated}</td>
+      <td class="next-action ${patent.urgent ? 'urgent' : ''}" data-label="Next action">${patent.next}</td>
+      <td class="row-action"><button class="row-btn" data-patent="${patent.id}" aria-label="View ${patent.title}">→</button></td>
+    </tr>`).join('') : `<tr><td colspan="7" class="empty"><span class="material-symbols-outlined">search_off</span>No records match those filters.<button class="clear-all" type="button" data-clear="all">Clear all filters</button></td></tr>`;
+  table.closest('.table-wrap').classList.remove('just-changed');
+  void table.offsetWidth;
+  table.closest('.table-wrap').classList.add('just-changed');
 }
 function openPatent(patent) {
   openRecordId = patent.id;
@@ -198,7 +241,7 @@ document.querySelector('#addClose').addEventListener('click', () => document.que
 document.querySelector('#addPatentForm').addEventListener('submit', (event) => {
   event.preventDefault(); const fields = event.currentTarget.querySelectorAll('input');
   patents.unshift({ id: fields[0].value, type: 'Patent', title: fields[1].value, status: 'Published', filed: 'Today', updated: 'Just now', next: 'Awaiting examination', timeline: [['25 Aug 2026', 'Added to your portfolio']] });
-  event.currentTarget.reset(); document.querySelector('#addDialog').close(); activeFilter = 'All'; statusFilter.value = 'All'; yearFilter.value = 'All'; typeFilter.value = 'All'; document.querySelectorAll('.chip').forEach((chip) => chip.classList.toggle('selected', chip.dataset.filter === 'All')); document.querySelectorAll('.type-card').forEach((card) => card.classList.toggle('selected', card.dataset.type === 'All')); renderPatents();
+  event.currentTarget.reset(); document.querySelector('#addDialog').close(); activeFilter = 'All'; statusFilter.value = 'All'; yearFilter.value = 'All'; typeFilter.value = 'All'; document.querySelectorAll('.chip').forEach((chip) => chip.classList.toggle('selected', chip.dataset.filter === 'All')); document.querySelectorAll('.type-card').forEach((card) => card.classList.toggle('selected', card.dataset.type === 'All')); renderTypeCounts(); renderStats(); renderPatents(); showPage('portfolio');
 });
 document.querySelector('#markRead').addEventListener('click', (event) => { event.target.textContent = 'All caught up'; document.querySelector('.alert-count').textContent = '0'; });
 document.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); search.focus(); } });
@@ -226,4 +269,167 @@ applyTheme(savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matc
 let savedUser = null;
 try { savedUser = JSON.parse(sessionStorage.getItem('patentlyDemoUser')); } catch { sessionStorage.removeItem('patentlyDemoUser'); }
 setAuthState(savedUser);
-renderPatents(); renderAttention(); renderActivity();
+renderGreeting(); renderTypeCounts(); renderStats(); renderPatents(); renderAttention(); renderActivity();
+
+function syncFilterUI() {
+  document.querySelectorAll('.chip').forEach((chip) => chip.classList.toggle('selected', chip.dataset.filter === activeFilter));
+  document.querySelectorAll('.type-card').forEach((card) => card.classList.toggle('selected', card.dataset.type === typeFilter.value));
+}
+function clearFilter(which) {
+  if (which === 'all' || which === 'type') typeFilter.value = 'All';
+  if (which === 'all' || which === 'status') { activeFilter = 'All'; statusFilter.value = 'All'; }
+  if (which === 'all' || which === 'year') yearFilter.value = 'All';
+  if (which === 'all' || which === 'search') search.value = '';
+  syncFilterUI();
+  renderPatents();
+}
+document.querySelector('#filterSummary').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-clear]');
+  if (button) clearFilter(button.dataset.clear);
+});
+table.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-clear]');
+  if (button) clearFilter(button.dataset.clear);
+});
+
+const sidebar = document.querySelector('#sidebar');
+const navScrim = document.querySelector('#navScrim');
+const menuBtn = document.querySelector('#menuBtn');
+function setNav(open) {
+  document.body.classList.toggle('nav-open', open);
+  navScrim.hidden = !open;
+  menuBtn.setAttribute('aria-expanded', String(open));
+  menuBtn.textContent = open ? 'close' : 'menu';
+  menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+}
+menuBtn.addEventListener('click', () => setNav(!document.body.classList.contains('nav-open')));
+navScrim.addEventListener('click', () => setNav(false));
+sidebar.addEventListener('click', (event) => { if (event.target.closest('.nav-link')) setNav(false); });
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape') setNav(false); });
+window.addEventListener('resize', () => { if (window.innerWidth > 900) setNav(false); });
+
+const IPO = 'https://ipindia.gov.in/pages/home/acts-rules-ipr';
+const filingSteps = [
+  { title: 'What can be patented?', tag: 'Eligibility', icon: 'lightbulb', points: [
+    'A product or process',
+    'Must be new',
+    'Must involve an inventive step (non-obvious)',
+    'Capable of industrial application',
+    `Must not fall under the statutory exclusions (<a href="${IPO}" target="_blank" rel="noopener">sections 3 and 4</a>)`
+  ] },
+  { title: 'Before you file', tag: 'Preparation', icon: 'search', points: [
+    'Conduct a preliminary search for novelty and obviousness',
+    'Use free databases like <a href="https://iprsearch.ipindia.gov.in/publicsearch" target="_blank" rel="noopener">InPASS</a>, <a href="https://patentscope.wipo.int/" target="_blank" rel="noopener">Patentscope</a> or <a href="https://worldwide.espacenet.com/" target="_blank" rel="noopener">Espacenet</a>',
+    'Prepare a draft specification',
+    'Review the specification to refine your draft',
+    'Seek professional help if required'
+  ] },
+  { title: 'Who can file?', tag: 'Applicant', icon: 'person', points: [
+    'The true and first inventor',
+    'The assignee of the inventor',
+    'A legal representative, where the inventor is deceased'
+  ] },
+  { title: 'Where to file', tag: 'Jurisdiction', icon: 'location_on', groups: [
+    { label: 'Depends on', items: ['Residence of the applicant', 'Place of business', 'Domicile', 'Place of origin of the invention'] },
+    { label: 'Patent offices', items: ['Delhi', 'Mumbai', 'Kolkata', 'Chennai'] }
+  ] },
+  { title: 'How to file', tag: 'Submission', icon: 'upload_file', points: [
+    'Physical filing, by post or in person',
+    'E-filing — recommended, with a concessional fee',
+    'Refer to the First Schedule for the prescribed fees'
+  ] },
+  { title: 'Documents required', tag: 'Forms', icon: 'description', groups: [
+    { label: 'Mandatory', items: [
+      '<b>Form 1</b> — Application for a patent',
+      '<b>Form 2</b> — Provisional / complete specification',
+      '<b>Form 3</b> — Statement and undertaking',
+      '<b>Form 5</b> — Declaration of inventorship',
+      '<b>Form 18</b> — Request for examination'
+    ] },
+    { label: 'Optional, if applicable', items: [
+      '<b>Form 9</b> — Early publication',
+      '<b>Form 18A</b> — Expedited examination',
+      '<b>Form 26</b> — Authorization of patent agent',
+      '<b>Form 28</b> — Small entity / startup / educational institution'
+    ] }
+  ] },
+  { title: 'Post-filing confirmation', tag: 'After filing', icon: 'receipt_long', points: [
+    'Preserve the payment receipts',
+    'Verify the submission on the official portal',
+    'Track the application status regularly'
+  ] },
+  { title: 'Publication', tag: '18 months', icon: 'menu_book', points: [
+    'Automatic publication 18 months after filing',
+    'Early publication can be requested on <b>Form 9</b>'
+  ] },
+  { title: 'Examination', tag: '31 months', icon: 'fact_check', points: [
+    'No examination takes place if <b>Form 18 / 18A</b> is not filed within 31 months from filing or priority, whichever is earlier',
+    'After examination, the First Examination Report (FER) is issued',
+    'Reply to the FER within 6 months, extendable by a further 3 months on <b>Form 4</b>',
+    'A hearing opportunity is extended to the applicant whenever required'
+  ], warn: true },
+  { title: 'Grant', tag: '20 years', icon: 'workspace_premium', points: [
+    'The patent is granted once all requirements under the Act and Rules are complied with',
+    'A patent is granted for 20 years from the date of filing',
+    'Renewal fees must be paid on time to maintain the patent'
+  ] },
+  { title: 'Advantages', tag: 'Outcome', icon: 'ads_click', points: [
+    'Exclusive right to prevent others from making, using, selling or importing the patented product or process without consent',
+    'Exploit your patent for market advantage, commercialization, licensing and more'
+  ] }
+];
+const filingTips = [
+  { icon: 'savings', text: 'E-filing attracts a fee concession.' },
+  { icon: 'fast_forward', text: 'Early publication reduces the waiting period.' },
+  { icon: 'rocket_launch', text: 'Expedited examination is available for eligible applicants.' },
+  { icon: 'alarm', text: 'Failure to meet a timeline is fatal in patent prosecution.', warn: true }
+];
+const filingResources = [
+  { label: 'IP Saarthi chatbot', url: 'https://ipindia.gov.in/ipsaarthi/', icon: 'smart_toy' },
+  { label: 'Open House Help Desk', url: 'https://iprsearch.ipindia.gov.in/openhousehelpdesk/Login/login', icon: 'support_agent' },
+  { label: 'InPASS patent search', url: 'https://iprsearch.ipindia.gov.in/publicsearch', icon: 'search' },
+  { label: 'Acts and rules', url: IPO, icon: 'gavel' }
+];
+function renderFilingSteps() {
+  document.querySelector('#applyTips').innerHTML = filingTips.map((tip) => `
+    <div class="apply-tip${tip.warn ? ' warn' : ''}"><span class="material-symbols-outlined">${tip.icon}</span><p>${tip.text}</p></div>`).join('');
+  document.querySelector('#applyResources').innerHTML = filingResources.map((item) => `
+    <a class="resource-link" href="${item.url}" target="_blank" rel="noopener"><span class="material-symbols-outlined">${item.icon}</span>${item.label}<span class="material-symbols-outlined resource-arrow">open_in_new</span></a>`).join('');
+  document.querySelector('#applySteps').innerHTML = filingSteps.map((step, index) => `
+    <li class="apply-step${step.warn ? ' warn' : ''}">
+      <div class="apply-step-num">${index + 1}</div>
+      <div class="apply-step-body">
+        <div class="apply-step-head"><strong><span class="material-symbols-outlined">${step.icon}</span>${step.title}</strong><span class="apply-step-time">${step.tag}</span></div>
+        ${step.points ? `<ul class="apply-points">${step.points.map((point) => `<li>${point}</li>`).join('')}</ul>` : ''}
+        ${step.groups ? `<div class="apply-groups">${step.groups.map((group) => `<div class="apply-group"><span class="apply-group-label">${group.label}</span><ul class="apply-points">${group.items.map((item) => `<li>${item}</li>`).join('')}</ul></div>`).join('')}</div>` : ''}
+      </div>
+    </li>`).join('');
+}
+document.querySelector('#applyPatentBtn').addEventListener('click', () => showPage('apply'));
+document.querySelector('#applyStartBtn').addEventListener('click', () => document.querySelector('#addDialog').showModal());
+document.querySelector('.icon-btn').addEventListener('click', () => showPage('dashboard'));
+renderFilingSteps();
+
+/* ---- Tabbed navigation: one section on screen at a time ---- */
+const pages = [...document.querySelectorAll('[data-page]')].map((page) => page.id);
+function showPage(id, { push = true } = {}) {
+  const target = pages.includes(id) ? id : pages[0];
+  document.querySelectorAll('[data-page]').forEach((page) => page.classList.toggle('active', page.id === target));
+  document.querySelectorAll('.nav-link, .page-tab').forEach((link) => {
+    const isCurrent = link.getAttribute('href') === `#${target}`;
+    link.classList.toggle('active', isCurrent);
+    if (isCurrent) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
+  });
+  if (push && window.location.hash.slice(1) !== target) window.history.replaceState(null, '', `#${target}`);
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('a[href^="#"]');
+  if (!link) return;
+  const id = link.getAttribute('href').slice(1);
+  if (!pages.includes(id)) return;
+  event.preventDefault();
+  showPage(id);
+});
+window.addEventListener('hashchange', () => showPage(window.location.hash.slice(1), { push: false }));
+showPage(window.location.hash.slice(1), { push: false });
