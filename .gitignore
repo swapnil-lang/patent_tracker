@@ -1,0 +1,12 @@
+# Local development and environment files
+.env
+.env.*
+!.env.example
+
+# Dependencies and runtime files
+node_modules/
+*.log
+
+# Operating-system files
+.DS_Store
+Thumbs.db

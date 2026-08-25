@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Patently | Patent Portfolio Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="auth-pending">
+    <div class="noise"></div>
+    <section id="loginScreen" class="login-screen" aria-label="Sign in to Patently">
+      <div class="login-brand"><span class="brand-mark"><span class="material-symbols-outlined">track_changes</span></span><span>patently</span></div>
+      <button class="theme-toggle login-theme-toggle material-symbols-outlined" type="button" data-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode">dark_mode</button>
+      <div class="login-card">
+        <div class="login-icon material-symbols-outlined">account_circle</div>
+        <p class="eyebrow">WELCOME BACK</p>
+        <h1>Sign in to your portfolio</h1>
+        <p class="login-copy">Track every application, deadline, and update in one place.</p>
+        <form id="loginForm" novalidate>
+          <label for="loginEmail">Email address</label>
+          <input id="loginEmail" type="email" autocomplete="email" placeholder="you@company.com" required />
+          <label for="loginPassword">Password <button type="button" class="forgot-link">Forgot password?</button></label>
+          <div class="password-field"><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password" required /><button type="button" id="passwordToggle" class="material-symbols-outlined" aria-label="Show password">visibility</button></div>
+          <p class="login-error" id="loginError" role="alert"></p>
+          <button class="login-submit" type="submit">Sign in <span class="material-symbols-outlined">arrow_forward</span></button>
+        </form>
+        <div class="or-divider"><span>or</span></div>
+        <button type="button" class="demo-btn" id="demoLogin"><span class="material-symbols-outlined">bolt</span> Continue with demo account</button>
+        <p class="signup-prompt">New to Patently? <a href="#">Create an account</a></p>
+      </div>
+      <p class="login-footer">By continuing, you agree to our Terms of Service and Privacy Policy.</p>
+    </section>
+    <div id="appShell">
+    <aside class="sidebar">
+      <a class="brand" href="#dashboard" aria-label="Patently dashboard"><span class="brand-mark"><span class="material-symbols-outlined">track_changes</span></span><span>patently</span></a>
+      <nav>
+        <a class="nav-link active" href="#dashboard"><span class="material-symbols-outlined">space_dashboard</span> Overview</a>
+        <a class="nav-link" href="#portfolio"><span class="material-symbols-outlined">folder_open</span> My portfolio <b>13</b></a>
+        <a class="nav-link" href="#alerts"><span class="material-symbols-outlined">notifications</span> Updates <b class="alert-count">3</b></a>
+        <a class="nav-link" href="#deadlines"><span class="material-symbols-outlined">event</span> Deadlines</a>
+        <a class="nav-link" href="#documents"><span class="material-symbols-outlined">description</span> Documents</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <a class="nav-link" href="#settings"><span class="material-symbols-outlined">settings</span> Settings</a>
+        <div class="profile"><div class="avatar" id="userInitials">AK</div><div><strong id="userName">Aarav Khanna</strong><small id="userRole">Founder, Novalytica</small></div><button class="logout-btn material-symbols-outlined" id="logoutBtn" aria-label="Sign out" title="Sign out">logout</button></div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div class="mobile-brand brand"><span class="brand-mark"><span class="material-symbols-outlined">track_changes</span></span><span>patently</span></div>
+        <button class="menu-btn material-symbols-outlined" aria-label="Open menu">menu</button>
+        <label class="global-search"><span class="material-symbols-outlined">search</span><input id="portfolioSearch" type="search" placeholder="Search applications, inventors or titles..." /><kbd>⌘ K</kbd></label>
+        <div class="top-actions"><button class="theme-toggle material-symbols-outlined" type="button" data-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode">dark_mode</button><button class="icon-btn material-symbols-outlined" aria-label="Notifications">notifications<i></i></button><button class="help-btn material-symbols-outlined">help</button></div>
+      </header>
+
+      <section id="dashboard" class="page-section hero">
+        <div><p class="eyebrow">TUESDAY, 25 AUGUST</p><h1>Good morning, Aarav.</h1><p class="lede">Here is what is moving across your patent portfolio.</p></div>
+        <button class="primary-btn" id="addPatentBtn"><span class="material-symbols-outlined">add</span> Add patent</button>
+      </section>
+
+      <section class="stats" aria-label="Patent portfolio statistics">
+        <article><div class="stat-icon terracotta">◫</div><div><p>Portfolio value</p><strong>13 <small>IP records</small></strong><span class="up">↑ 5</span><em>added this year</em></div></article>
+        <article><div class="stat-icon gold">◌</div><div><p>Needs your attention</p><strong>2</strong><span class="warn">Due soon</span><em>within 30 days</em></div></article>
+        <article><div class="stat-icon moss">✓</div><div><p>Granted patents</p><strong>3</strong><span class="up">↑ 1</span><em>in the last 12 months</em></div></article>
+        <article><div class="stat-icon ink">↗</div><div><p>Updated this week</p><strong>3</strong><span class="up">Live</span><em>status changes</em></div></article>
+      </section>
+
+      <section class="ip-types" aria-label="IP portfolio types">
+        <button class="type-card selected" data-type="All"><span class="material-symbols-outlined">account_tree</span><span><strong>All IP assets</strong><small>13 records</small></span><b>View all</b></button>
+        <button class="type-card" data-type="Patent"><span class="material-symbols-outlined">lightbulb</span><span><strong>Patents</strong><small>8 applications</small></span><b>8</b></button>
+        <button class="type-card" data-type="Design"><span class="material-symbols-outlined">palette</span><span><strong>Designs</strong><small>2 registrations</small></span><b>2</b></button>
+        <button class="type-card" data-type="Trademark"><span class="material-symbols-outlined">sell</span><span><strong>Trademarks</strong><small>2 marks</small></span><b>2</b></button>
+        <button class="type-card" data-type="Geographical indication"><span class="material-symbols-outlined">public</span><span><strong>Geographical indications</strong><small>1 application</small></span><b>1</b></button>
+        <button class="type-card" data-type="Copyright"><span class="material-symbols-outlined">copyright</span><span><strong>Copyrights</strong><small>1 registration</small></span><b>1</b></button>
+      </section>
+
+      <section id="alerts" class="attention-grid">
+        <div class="panel attention-panel"><div class="panel-heading"><div><p class="eyebrow">YOUR NEXT STEPS</p><h2>Needs attention</h2></div><a href="#deadlines">View all →</a></div><div id="attentionList"></div></div>
+        <div class="panel pulse-panel"><div class="panel-heading"><div><p class="eyebrow">PORTFOLIO PULSE</p><h2>Recent activity</h2></div><button id="markRead">Mark all read</button></div><div id="activityList"></div></div>
+      </section>
+
+      <section id="portfolio" class="portfolio-section">
+        <div class="section-heading"><div><p class="eyebrow">YOUR IP PORTFOLIO</p><h2>All records <span id="resultCount">13</span></h2></div><button class="text-btn">Export <span>↓</span></button></div>
+        <div class="filters">
+          <div class="filter-chips" id="filterChips"><button class="chip selected" data-filter="All">All</button><button class="chip" data-filter="Under examination">Under examination</button><button class="chip" data-filter="Granted">Granted</button><button class="chip" data-filter="Action needed">Action needed</button></div>
+          <div class="filter-controls">
+            <label class="filter-select"><span class="material-symbols-outlined">category</span><select id="typeFilter" aria-label="Filter by IP type"><option value="All">All IP types</option><option value="Patent">Patents</option><option value="Design">Designs</option><option value="Trademark">Trademarks</option><option value="Geographical indication">Geographical indications</option><option value="Copyright">Copyrights</option></select></label>
+            <label class="filter-select"><span class="material-symbols-outlined">filter_list</span><select id="statusFilter" aria-label="Filter by status"><option value="All">All statuses</option><option value="Under examination">Under examination</option><option value="Granted">Granted</option><option value="Action needed">Action needed</option><option value="Published">Published</option><option value="Registered">Registered</option><option value="Accepted and advertised">Accepted and advertised</option><option value="Formalities check">Formalities check</option></select></label>
+            <label class="filter-select"><span class="material-symbols-outlined">event</span><select id="yearFilter" aria-label="Filter by filing year"><option value="All">All filing years</option><option value="2024">Filed in 2024</option><option value="2023">Filed in 2023</option><option value="2022">Filed in 2022</option></select></label>
+          </div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Record</th><th>IP type</th><th>Status</th><th>Filed</th><th>Last update</th><th>Next action</th><th></th></tr></thead><tbody id="patentTable"></tbody></table></div>
+      </section>
+    </main>
+
+    <dialog id="patentDialog" class="patent-dialog">
+      <button class="dialog-close" id="dialogClose" aria-label="Close">×</button>
+      <div id="dialogContent"></div>
+    </dialog>
+
+    <dialog id="addDialog" class="add-dialog">
+      <button class="dialog-close" id="addClose" aria-label="Close">×</button>
+      <p class="eyebrow">ADD TO PORTFOLIO</p><h2>Track a new patent</h2><p class="dialog-copy">Enter an application number to begin tracking. This demo adds it to your local portfolio.</p>
+      <form id="addPatentForm"><label>Application number<input required placeholder="e.g. 202441012345" /></label><label>Invention title<input required placeholder="e.g. Smart irrigation platform" /></label><button class="primary-btn" type="submit">Add to portfolio</button></form>
+    </dialog>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>
