@@ -501,8 +501,12 @@ body[data-theme='dark'] .bulk-status{color:#a8dab5}
 body[data-theme='dark'] .bulk-status.has-errors{color:#f2b8b5}
 
 /* ---- Login problem panel ------------------------------------------- */
-.login-split{width:min(100%,1060px);display:grid;grid-template-columns:1.05fr minmax(380px,440px);gap:clamp(28px,5vw,68px);align-items:center}
-.login-problem{max-width:520px}
+.problem-trigger{margin-top:22px;display:flex;align-items:center;gap:8px;border:1px solid #c3cbd6;background:#ffffffb8;color:#0b57d0;font:500 13px var(--sans);padding:10px 18px;border-radius:22px;cursor:pointer;backdrop-filter:blur(4px)}
+.problem-trigger:hover{background:#fff;border-color:#0b57d0}
+.problem-trigger span{font-size:18px}
+.problem-dialog{width:min(94vw,620px);border:0;border-radius:20px;padding:34px 38px 30px;background:#fff;color:#202124;box-shadow:0 18px 60px #0b57d029}
+.problem-dialog::backdrop{background:#0b193266;backdrop-filter:blur(2px)}
+.problem-cta{margin-top:26px;width:100%;justify-content:center}
 .login-problem h2{font-size:clamp(30px,3.4vw,42px);line-height:1.12;font-weight:400;letter-spacing:-1.2px;margin:6px 0 0;color:#202124}
 .problem-lede{margin:16px 0 26px;color:#5f6368;font-size:14px;line-height:1.6;max-width:44ch}
 .problem-loop{list-style:none;margin:0;padding:0;display:grid;gap:0;border-left:2px dashed #c6d4ea;padding-left:22px}
@@ -523,15 +527,10 @@ body[data-theme='dark'] .problem-loop li:before{background:#111318;border-color:
 body[data-theme='dark'] .problem-loop li>span{background:#17375e;color:#a8c7fa}
 body[data-theme='dark'] .problem-cost{background:#3b1a17;color:#f2b8b5}
 body[data-theme='dark'] .problem-flip{color:#a8c7fa}
-@media(max-width:960px){
-  .login-split{grid-template-columns:1fr;max-width:460px;gap:34px}
-  .login-problem{max-width:none}
-  .login-screen{justify-content:flex-start;padding-top:96px}
-  .login-problem h2{font-size:28px}
-  .login-footer{position:static;margin:26px 0 0}
-}
+body[data-theme='dark'] .problem-trigger{background:#1d1f24b8;border-color:#5d6169;color:#a8c7fa}
+body[data-theme='dark'] .problem-trigger:hover{background:#1d1f24;border-color:#a8c7fa}
+body[data-theme='dark'] .problem-dialog{background:#1d1f24;color:#e3e2e6}
 @media(max-width:600px){
-  .login-screen{padding-top:24px}
-  .problem-loop li:nth-child(n+3){display:none}
+  .problem-dialog{padding:26px 22px 24px}
+  .login-problem h2{font-size:26px}
 }
-@media(min-width:961px){.login-screen{padding:86px 40px 62px}}

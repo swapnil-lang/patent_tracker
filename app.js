@@ -288,6 +288,10 @@ document.querySelector('#patentDialog').addEventListener('change', (event) => {
   openPatent(patents.find((patent) => patent.id === openRecordId));
 });
 document.querySelector('#dialogClose').addEventListener('click', () => document.querySelector('#patentDialog').close());
+const problemDialog = document.querySelector('#problemDialog');
+document.querySelector('#problemBtn').addEventListener('click', () => problemDialog.showModal());
+document.querySelector('#problemClose').addEventListener('click', () => problemDialog.close());
+document.querySelector('#problemCta').addEventListener('click', () => { problemDialog.close(); document.querySelector('#loginEmail').focus(); });
 document.querySelector('#addPatentBtn').addEventListener('click', () => document.querySelector('#addDialog').showModal());
 document.querySelector('#addClose').addEventListener('click', () => document.querySelector('#addDialog').close());
 document.querySelector('#addPatentForm').addEventListener('submit', (event) => {
