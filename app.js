@@ -123,7 +123,10 @@ function renderGreeting() {
 }
 function renderStats() {
   document.querySelector('#statTotal').innerHTML = `${patents.length} <small>IP records</small>`;
-  document.querySelector('#statUrgent').textContent = patents.filter((patent) => patent.urgent).length;
+  /* The deadline engine in features.js takes over once it has loaded. */
+  document.querySelector('#statUrgent').textContent = typeof needsAttention === 'function'
+    ? needsAttention().length
+    : patents.filter((patent) => patent.urgent).length;
   document.querySelector('#statGranted').textContent = patents.filter((patent) => patent.status === 'Granted' || patent.status === 'Registered').length;
 }
 function renderFilterSummary(shown) {
@@ -140,6 +143,13 @@ function renderFilterSummary(shown) {
     ${active.map((item) => `<button class="active-filter" type="button" data-clear="${item.clear}">${item.label}<span class="material-symbols-outlined">close</span></button>`).join('')}
     ${active.length ? '<button class="clear-all" type="button" data-clear="all">Clear all</button>' : ''}`;
 }
+/* Next action reads as a countdown once the deadline engine is available. */
+function nextActionCell(patent) {
+  if (typeof deadlineOf !== 'function') return patent.next;
+  const deadline = deadlineOf(patent);
+  if (deadline.days === null) return patent.next;
+  return `${deadline.action}<span class="tier-pill ${deadline.tier}">${countdownText(deadline.days)}</span>`;
+}
 function renderPatents() {
   const list = filteredPatents();
   document.querySelector('#resultCount').textContent = list.length;
@@ -150,25 +160,67 @@ function renderPatents() {
       <td data-label="IP type"><span class="type-tag ${slug(patent.type)}">${patent.type}</span></td>
       <td data-label="Status"><span class="status ${slug(patent.status)}">${patent.status}</span></td>
       <td class="date" data-label="Filed">${patent.filed}</td><td class="date" data-label="Last update">${patent.updated}</td>
-      <td class="next-action ${patent.urgent ? 'urgent' : ''}" data-label="Next action">${patent.next}</td>
+      <td class="next-action ${patent.urgent ? 'urgent' : ''}" data-label="Next action">${nextActionCell(patent)}</td>
       <td class="row-action"><button class="row-btn" data-patent="${patent.id}" aria-label="View ${patent.title}">→</button></td>
     </tr>`).join('') : `<tr><td colspan="7" class="empty"><span class="material-symbols-outlined">search_off</span>No records match those filters.<button class="clear-all" type="button" data-clear="all">Clear all filters</button></td></tr>`;
   table.closest('.table-wrap').classList.remove('just-changed');
   void table.offsetWidth;
   table.closest('.table-wrap').classList.add('just-changed');
 }
+/* Plain-language explainer, deadline, fee and reminder plan for one record.
+   Renders nothing until features.js has loaded. */
+function recordBriefing(patent) {
+  if (typeof deadlineOf !== 'function') return '';
+  const guide = statusGuide[patent.status];
+  const deadline = deadlineOf(patent);
+  const fee = feeFor(patent);
+  const schedule = reminderSchedule(patent);
+  return `
+    ${guide ? `<div class="status-guide">
+      <h3 class="timeline-title">What "${patent.status}" means for you</h3>
+      <div class="guide-row"><span class="material-symbols-outlined">translate</span><div><small>IN PLAIN ENGLISH</small><p>${guide.means}</p></div></div>
+      <div class="guide-row warn"><span class="material-symbols-outlined">report</span><div><small>IF YOU DO NOTHING</small><p>${guide.ifIgnored}</p></div></div>
+      <div class="guide-row go"><span class="material-symbols-outlined">arrow_forward</span><div><small>WHAT TO DO NEXT</small><p>${guide.next}</p></div></div>
+    </div>` : ''}
+    ${deadline.days === null ? '' : `<div class="deadline-card ${deadline.tier}">
+      <div><small>NEXT DEADLINE</small><strong>${deadline.action}</strong>
+        <p>${formatDate(deadline.date)} · ${countdownText(deadline.days)}${patent.extendableTo ? ` · extendable to ${formatDate(parseISO(patent.extendableTo))} on Form 4` : ''}</p></div>
+      <button class="cal-add" type="button" data-ics="${patent.id}" title="Add to calendar" aria-label="Add to calendar"><span class="material-symbols-outlined">event_available</span></button>
+    </div>`}
+    ${fee ? `<div class="fee-card"><span class="material-symbols-outlined">payments</span>
+      <div><small>OFFICIAL FEE</small><strong>${fee.amount ? rupees(fee.amount) : 'No official fee'} · ${fee.label}</strong>
+      <p>${fee.note || `At the ${entityTypes[entityTier].label.toLowerCase()} rate. Change the rate on the deadlines page.`}</p></div></div>` : ''}
+    ${schedule.length ? `<h3 class="timeline-title">Reminder plan</h3>
+      <div class="reminder-plan">${schedule.map((ping) => `
+        <div class="plan-row${ping.sent ? ' is-sent' : ''}"><span class="plan-date">${formatDate(ping.date)}</span>
+          <span>${ping.lead} day${ping.lead === 1 ? '' : 's'} before${ping.sent ? ' · sent' : ''}</span>
+          <span class="preview-channels">${ping.channels.map((key) => `<i class="material-symbols-outlined" title="${channelMeta[key].label}">${channelMeta[key].icon}</i>`).join('')}</span></div>`).join('')}
+      </div>
+      <button class="text-btn plan-settings" type="button" data-open-reminders>Change reminder settings</button>` : ''}`;
+}
 function openPatent(patent) {
   openRecordId = patent.id;
   const documents = mockDocuments(patent);
   document.querySelector('#dialogContent').innerHTML = `
     <div class="detail-header"><span class="type-tag ${slug(patent.type)}">${patent.type}</span> <span class="status ${slug(patent.status)}">${patent.status}</span><h2>${patent.title}</h2><p>${patent.type.toUpperCase()} RECORD NO. ${patent.id}</p></div>
-    <div class="detail-content"><div class="detail-meta"><div><small>FILED</small><strong>${patent.filed}</strong></div><div><small>LAST UPDATED</small><strong>${patent.updated}</strong></div><div><small>NEXT ACTION</small><strong>${patent.next}</strong></div></div><h3 class="timeline-title">Application timeline</h3>${patent.timeline.map(([date, event]) => `<div class="timeline-item"><strong>${event}</strong><small>${date}</small></div>`).join('')}<div class="documents-heading"><h3 class="timeline-title">Documents <span>${documents.length}</span></h3><button class="upload-doc-btn" type="button" data-action="upload-document"><span class="material-symbols-outlined">upload_file</span> Upload</button><input class="document-file-input" id="documentFileInput" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" /></div><p class="upload-hint">PDF, DOC, DOCX, PNG or JPG up to 10 MB</p><div class="record-documents">${documents.map((document) => `<div class="record-document"><span class="document-icon material-symbols-outlined">${document.icon}</span><div><strong>${document.name}</strong><small>${document.format} · ${document.date}${document.uploaded ? ' · Uploaded by you' : ''}</small></div><button class="download-doc material-symbols-outlined" type="button" data-document="${document.name}" aria-label="Download ${document.name}">download</button></div>`).join('')}</div></div>`;
+    <div class="detail-content"><div class="detail-meta"><div><small>FILED</small><strong>${patent.filed}</strong></div><div><small>LAST UPDATED</small><strong>${patent.updated}</strong></div><div><small>NEXT ACTION</small><strong>${patent.next}</strong></div></div>${recordBriefing(patent)}<h3 class="timeline-title">Application timeline</h3>${patent.timeline.map(([date, event]) => `<div class="timeline-item"><strong>${event}</strong><small>${date}</small></div>`).join('')}<div class="documents-heading"><h3 class="timeline-title">Documents <span>${documents.length}</span></h3><button class="upload-doc-btn" type="button" data-action="upload-document"><span class="material-symbols-outlined">upload_file</span> Upload</button><input class="document-file-input" id="documentFileInput" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" /></div><p class="upload-hint">PDF, DOC, DOCX, PNG or JPG up to 10 MB</p><div class="record-documents">${documents.map((document) => `<div class="record-document"><span class="document-icon material-symbols-outlined">${document.icon}</span><div><strong>${document.name}</strong><small>${document.format} · ${document.date}${document.uploaded ? ' · Uploaded by you' : ''}</small></div><button class="download-doc material-symbols-outlined" type="button" data-document="${document.name}" aria-label="Download ${document.name}">download</button></div>`).join('')}</div></div>`;
   const dialog = document.querySelector('#patentDialog');
   if (!dialog.open) dialog.showModal();
 }
 function renderAttention() {
-  const attention = patents.filter((patent) => patent.urgent);
-  document.querySelector('#attentionList').innerHTML = attention.map((patent) => `<div class="attention-item"><div class="attention-icon">!</div><div><strong>${patent.title}</strong><small>IN ${patent.id} · ${patent.next}</small></div><span class="due-tag">ACTION REQUIRED</span></div>`).join('');
+  const list = document.querySelector('#attentionList');
+  /* Before features.js loads, fall back to the hand-flagged records. */
+  if (typeof needsAttention !== 'function') {
+    list.innerHTML = patents.filter((patent) => patent.urgent).map((patent) => `<div class="attention-item"><div class="attention-icon">!</div><div><strong>${patent.title}</strong><small>IN ${patent.id} · ${patent.next}</small></div><span class="due-tag">ACTION REQUIRED</span></div>`).join('');
+    return;
+  }
+  const items = needsAttention();
+  list.innerHTML = items.length ? items.map((item) => `
+    <div class="attention-item ${item.tier}" data-patent="${item.record.id}" role="button" tabindex="0">
+      <div class="attention-icon">!</div>
+      <div><strong>${item.record.title}</strong><small>${item.record.type.toUpperCase()} ${item.record.id} · ${item.action}</small></div>
+      <span class="due-tag ${item.tier}">${countdownText(item.days).toUpperCase()}</span>
+    </div>`).join('') : '<p class="deadline-empty">Nothing falls due in the next six weeks.</p>';
 }
 function renderActivity() {
   const activity = [
@@ -183,13 +235,13 @@ document.querySelector('#filterChips').addEventListener('click', (event) => {
   if (!event.target.matches('.chip')) return;
   activeFilter = event.target.dataset.filter;
   statusFilter.value = activeFilter;
-  document.querySelectorAll('.chip').forEach((chip) => chip.classList.toggle('selected', chip === event.target));
+  document.querySelectorAll('#filterChips .chip').forEach((chip) => chip.classList.toggle('selected', chip === event.target));
   renderPatents();
 });
 search.addEventListener('input', renderPatents);
 statusFilter.addEventListener('change', () => {
   activeFilter = statusFilter.value;
-  document.querySelectorAll('.chip').forEach((chip) => chip.classList.toggle('selected', chip.dataset.filter === activeFilter));
+  document.querySelectorAll('#filterChips .chip').forEach((chip) => chip.classList.toggle('selected', chip.dataset.filter === activeFilter));
   renderPatents();
 });
 yearFilter.addEventListener('change', renderPatents);
@@ -241,7 +293,7 @@ document.querySelector('#addClose').addEventListener('click', () => document.que
 document.querySelector('#addPatentForm').addEventListener('submit', (event) => {
   event.preventDefault(); const fields = event.currentTarget.querySelectorAll('input');
   patents.unshift({ id: fields[0].value, type: 'Patent', title: fields[1].value, status: 'Published', filed: 'Today', updated: 'Just now', next: 'Awaiting examination', timeline: [['25 Aug 2026', 'Added to your portfolio']] });
-  event.currentTarget.reset(); document.querySelector('#addDialog').close(); activeFilter = 'All'; statusFilter.value = 'All'; yearFilter.value = 'All'; typeFilter.value = 'All'; document.querySelectorAll('.chip').forEach((chip) => chip.classList.toggle('selected', chip.dataset.filter === 'All')); document.querySelectorAll('.type-card').forEach((card) => card.classList.toggle('selected', card.dataset.type === 'All')); renderTypeCounts(); renderStats(); renderPatents(); showPage('portfolio');
+  event.currentTarget.reset(); document.querySelector('#addDialog').close(); activeFilter = 'All'; statusFilter.value = 'All'; yearFilter.value = 'All'; typeFilter.value = 'All'; document.querySelectorAll('#filterChips .chip').forEach((chip) => chip.classList.toggle('selected', chip.dataset.filter === 'All')); document.querySelectorAll('.type-card').forEach((card) => card.classList.toggle('selected', card.dataset.type === 'All')); if (typeof refreshAll === 'function') refreshAll(); else { renderTypeCounts(); renderStats(); renderPatents(); } showPage('portfolio');
 });
 document.querySelector('#markRead').addEventListener('click', (event) => { event.target.textContent = 'All caught up'; document.querySelector('.alert-count').textContent = '0'; });
 document.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); search.focus(); } });
@@ -272,7 +324,7 @@ setAuthState(savedUser);
 renderGreeting(); renderTypeCounts(); renderStats(); renderPatents(); renderAttention(); renderActivity();
 
 function syncFilterUI() {
-  document.querySelectorAll('.chip').forEach((chip) => chip.classList.toggle('selected', chip.dataset.filter === activeFilter));
+  document.querySelectorAll('#filterChips .chip').forEach((chip) => chip.classList.toggle('selected', chip.dataset.filter === activeFilter));
   document.querySelectorAll('.type-card').forEach((card) => card.classList.toggle('selected', card.dataset.type === typeFilter.value));
 }
 function clearFilter(which) {

@@ -40,6 +40,7 @@
       <nav>
         <a class="nav-link active" href="#dashboard"><span class="material-symbols-outlined">space_dashboard</span> Overview</a>
         <a class="nav-link" href="#portfolio"><span class="material-symbols-outlined">folder_open</span> My portfolio <b>13</b></a>
+        <a class="nav-link" href="#deadlines"><span class="material-symbols-outlined">event_upcoming</span> Deadlines &amp; fees <b id="navDeadlineCount">0</b></a>
         <a class="nav-link" href="#apply"><span class="material-symbols-outlined">edit_document</span> Apply for IP</a>
       </nav>
       <div class="sidebar-bottom">
@@ -58,6 +59,7 @@
       <nav class="page-tabs" id="pageTabs" aria-label="Sections">
         <a class="page-tab" href="#dashboard"><span class="material-symbols-outlined">space_dashboard</span>Overview</a>
         <a class="page-tab" href="#portfolio"><span class="material-symbols-outlined">folder_open</span>Portfolio</a>
+        <a class="page-tab" href="#deadlines"><span class="material-symbols-outlined">event_upcoming</span>Deadlines</a>
         <a class="page-tab" href="#apply"><span class="material-symbols-outlined">edit_document</span>Apply</a>
       </nav>
 
@@ -105,6 +107,56 @@
       </section>
       </div>
 
+      <div class="page" id="deadlines" data-page>
+      <section class="portfolio-section">
+        <div class="section-heading">
+          <div><p class="eyebrow">NEVER MISS A DATE</p><h2>Deadlines &amp; fees</h2></div>
+          <div class="deadline-actions">
+            <button class="secondary-btn" type="button" data-open-reminders><span class="material-symbols-outlined">notifications_active</span> Reminder settings</button>
+            <button class="primary-btn" type="button" id="exportIcs"><span class="material-symbols-outlined">download</span> Export to my calendar</button>
+          </div>
+        </div>
+        <p class="apply-lede">Every statutory date across your portfolio, counted down from today. Missing one of these is usually irreversible, so Patently tracks them for you and can push them into the calendar you already use.</p>
+
+        <section class="stats deadline-stats" aria-label="Deadline summary">
+          <article><div class="stat-icon red">!</div><div><p>Overdue</p><strong id="deadlineOverdue">0</strong><em>needs action today</em></div></article>
+          <article><div class="stat-icon terracotta">◫</div><div><p>Next 15 days</p><strong id="deadlineCritical">0</strong><em>critical window</em></div></article>
+          <article><div class="stat-icon gold">◌</div><div><p>Next 45 days</p><strong id="deadlineWarning">0</strong><em>plan these now</em></div></article>
+          <article><div class="stat-icon moss">₹</div><div><p>Official fees, 12 months</p><strong id="deadlineFees">₹0</strong><em>at your entity rate</em></div></article>
+        </section>
+
+        <div class="deadline-grid">
+          <div class="panel calendar-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">DEADLINE CALENDAR</p><h2 id="calendarLabel">—</h2></div>
+              <div class="calendar-nav">
+                <button type="button" id="calendarPrev" class="material-symbols-outlined" aria-label="Previous month">chevron_left</button>
+                <button type="button" id="calendarToday">Today</button>
+                <button type="button" id="calendarNext" class="material-symbols-outlined" aria-label="Next month">chevron_right</button>
+              </div>
+            </div>
+            <div class="calendar-grid" id="deadlineCalendar"></div>
+            <div class="calendar-legend">
+              <span><i class="dot overdue"></i>Overdue</span><span><i class="dot critical"></i>Within 15 days</span>
+              <span><i class="dot warning"></i>Within 45 days</span><span><i class="dot soon"></i>Within 90 days</span><span><i class="dot clear"></i>Later</span>
+            </div>
+          </div>
+          <div class="panel deadline-panel">
+            <div class="panel-heading"><div><p class="eyebrow">NEXT 12 MONTHS</p><h2>Upcoming actions</h2></div></div>
+            <div id="deadlineList"></div>
+          </div>
+        </div>
+
+        <div class="panel fee-panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">WHAT IT WILL COST</p><h2>Fee tracker</h2></div>
+            <div class="entity-picker" id="entityPicker" role="group" aria-label="Applicant category"></div>
+          </div>
+          <div id="feeBody"></div>
+        </div>
+      </section>
+      </div>
+
       <div class="page" id="apply" data-page>
       <section class="apply-section">
         <div class="section-heading"><div><p class="eyebrow">FILE A NEW APPLICATION</p><h2>Patent application filing</h2></div><a class="text-btn" href="https://ipindia.gov.in/" target="_blank" rel="noopener">IP India <span>↗</span></a></div>
@@ -131,10 +183,39 @@
 
     <dialog id="addDialog" class="add-dialog">
       <button class="dialog-close" id="addClose" aria-label="Close">×</button>
-      <p class="eyebrow">ADD TO PORTFOLIO</p><h2>Track an existing application</h2><p class="dialog-copy">Already filed? Enter the application number to pull it into your portfolio and start receiving status updates.</p>
-      <form id="addPatentForm"><label>Application number<input required placeholder="e.g. 202441012345" /></label><label>Invention title<input required placeholder="e.g. Smart irrigation platform" /></label><button class="primary-btn" type="submit">Add to portfolio</button></form>
+      <p class="eyebrow">ADD TO PORTFOLIO</p><h2>Track existing applications</h2><p class="dialog-copy">Already filed? Pull your records into the portfolio and start receiving status updates.</p>
+      <div class="add-tabs" id="addTabs" role="tablist">
+        <button type="button" class="chip selected" data-add-tab="single">One record</button>
+        <button type="button" class="chip" data-add-tab="bulk">Bulk import</button>
+      </div>
+      <div data-add-pane="single">
+        <form id="addPatentForm"><label>Application number<input required placeholder="e.g. 202441012345" /></label><label>Invention title<input required placeholder="e.g. Smart irrigation platform" /></label><button class="primary-btn" type="submit">Add to portfolio</button></form>
+      </div>
+      <div data-add-pane="bulk" hidden>
+        <form id="bulkForm">
+          <div class="bulk-head">
+            <label class="bulk-label" for="bulkText">One record per line: <code>application number, title, type</code></label>
+            <div class="bulk-tools">
+              <button type="button" class="text-btn" id="bulkSample">Use sample</button>
+              <label class="text-btn bulk-upload">Upload CSV<input type="file" id="bulkFile" accept=".csv,.txt" hidden /></label>
+            </div>
+          </div>
+          <textarea id="bulkText" rows="7" placeholder="202541003377, Adaptive Wind Turbine Pitch Control, patent&#10;441902-001, Foldable Solar Lantern Housing, design&#10;7104882, VERDANTA, trademark"></textarea>
+          <p class="bulk-status" id="bulkStatus"></p>
+          <p class="upload-hint">A header row is optional. Type defaults to patent, and duplicates are skipped.</p>
+          <button class="primary-btn" type="submit">Import records</button>
+        </form>
+      </div>
+    </dialog>
+
+    <dialog id="reminderDialog" class="add-dialog reminder-dialog">
+      <button class="dialog-close" id="reminderClose" aria-label="Close">×</button>
+      <p class="eyebrow">STAY AHEAD</p><h2>Reminder settings</h2>
+      <p class="dialog-copy">Choose how and when Patently should chase you before a statutory date.</p>
+      <div id="reminderBody"></div>
     </dialog>
     </div>
     <script src="./app.js"></script>
+    <script src="./features.js"></script>
   </body>
 </html>
